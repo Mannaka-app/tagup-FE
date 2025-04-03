@@ -36,4 +36,7 @@ yarn-error.*
 
 # app files
 app.json
+app.config.js.env
+app.json
 app.config.js
+.DS_Store
