@@ -1,6 +1,7 @@
 import fetcher from '@/utils/fetcher';
 import { axiosInstance } from './@core';
 import * as SecureStore from 'expo-secure-store';
+
 export interface UserDetailDto {
   nickname: string;
   gender: 'MALE' | 'FEMALE';

@@ -12,7 +12,7 @@ export default function MyPageScreen() {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      // await logout();
       await clearAuth();
       router.replace('/login');
     } catch (error) {
