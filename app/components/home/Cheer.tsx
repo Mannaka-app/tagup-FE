@@ -3,96 +3,26 @@ import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { type CheerTalk } from '@/apis/cheer';
+import { useCheers } from '@/hooks/useCheer';
 
-// Types
-interface User {
-  name: string;
-  seed: string;
-}
+const formatTime = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
 
-interface Post {
-  id: number;
-  user: User;
-  content: string;
-  likeCount: number;
-  time: string;
-}
-
-// Constants
-const DUMMY_POSTS: Post[] = [
-  {
-    id: 1,
-    user: { name: '동현', seed: 'donghyun' },
-    content: '키움 개못하네...',
-    likeCount: 2,
-    time: '방금 전',
-  },
-  {
-    id: 2,
-    user: { name: 'SunyJun', seed: 'sunyjun' },
-    content: '오사카에서 현지인들이 가는 음식점 알려주세요 @!',
-    likeCount: 0,
-    time: '방금 전',
-  },
-  {
-    id: 3,
-    user: {
-      name: '미냥_○.○',
-      seed: 'minyang',
-    },
-    content: '나 자야돼!',
-    likeCount: 0,
-    time: '방금 전',
-  },
-  {
-    id: 4,
-    user: {
-      name: '미냥_○.○',
-      seed: 'minyang',
-    },
-    content: '나 자야돼!',
-    likeCount: 0,
-    time: '방금 전',
-  },
-  {
-    id: 5,
-    user: {
-      name: '미냥_○.○',
-      seed: 'minyang',
-    },
-    content: '나 자야돼!',
-    likeCount: 0,
-    time: '방금 전',
-  },
-  {
-    id: 6,
-    user: {
-      name: '미냥_○.○',
-      seed: 'minyang',
-    },
-    content: '나 자야돼!',
-    likeCount: 0,
-    time: '방금 전',
-  },
-  {
-    id: 7,
-    user: {
-      name: '미냥_○.○',
-      seed: 'minyang',
-    },
-    content: '나 자야돼!',
-    likeCount: 0,
-    time: '방금 전',
-  },
-];
-
-const getAvatarUrl = (seed: string) =>
-  encodeURI(
-    `https://api.dicebear.com/7.x/lorelei/png?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9&radius=50&size=64`
-  );
+  if (minutes < 1) return '방금 전';
+  if (minutes < 60) return `${minutes}분 전`;
+  if (hours < 24) return `${hours}시간 전`;
+  return `${days}일 전`;
+};
 
 export default function Cheer() {
   const { user } = useAuthStore();
+  const { data: cheerTalks = [] } = useCheers();
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
 
   const handleLike = (postId: number) => {
@@ -106,41 +36,46 @@ export default function Cheer() {
   return (
     <View className='flex-1 bg-white'>
       <ScrollView className='flex-1'>
-        {DUMMY_POSTS.map((post) => (
-          <View key={post.id} className='border-b border-gray-200'>
+        {cheerTalks.map((cheerTalk) => (
+          <View key={cheerTalk.id} className='border-b border-gray-200'>
             <View className='flex flex-col px-5 py-4 gap-[20px]'>
               <View className='flex-row items-center gap-[10px]'>
                 <Image
-                  source={{ uri: getAvatarUrl(post.user.seed) }}
+                  source={{ uri: cheerTalk.profileUrl }}
                   className='w-10 h-10 rounded-full bg-gray-100'
                 />
                 <View className='flex flex-col gap-[5px]'>
-                  <Text className='font-regular text-sm'>{post.user.name}</Text>
+                  <Text className='font-regular text-sm'>
+                    {cheerTalk.nickname}
+                  </Text>
                   <Text className='font-light text-gray-500 text-xs'>
-                    {post.time}
+                    {formatTime(cheerTalk.createdAt)}
                   </Text>
                 </View>
               </View>
               <View>
-                <Text className='text-sm font-light'>{post.content}</Text>
+                <Text className='text-sm font-light'>{cheerTalk.content}</Text>
               </View>
               <View className='flex flex-row items-center'>
                 <View className='flex flex-row items-center gap-[3px]'>
-                  <TouchableOpacity onPress={() => handleLike(post.id)}>
+                  <TouchableOpacity onPress={() => handleLike(cheerTalk.id)}>
                     <Ionicons
                       name={
-                        likedPosts.includes(post.id) ? 'heart' : 'heart-outline'
+                        likedPosts.includes(cheerTalk.id)
+                          ? 'heart'
+                          : 'heart-outline'
                       }
                       size={14}
                       color={
-                        likedPosts.includes(post.id)
+                        likedPosts.includes(cheerTalk.id)
                           ? user?.teams?.color
                           : '#6B7280'
                       }
                     />
                   </TouchableOpacity>
                   <Text className='text-gray-500 font-light text-sm'>
-                    {post.likeCount + (likedPosts.includes(post.id) ? 1 : 0)}
+                    {cheerTalk.likes +
+                      (likedPosts.includes(cheerTalk.id) ? 1 : 0)}
                   </Text>
                 </View>
               </View>

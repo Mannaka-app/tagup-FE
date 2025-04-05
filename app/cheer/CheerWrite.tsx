@@ -18,7 +18,7 @@ export default function CheerWrite() {
       {/* 헤더 */}
       <View className='flex-row justify-between items-center px-4 py-3 border-b border-gray-200'>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text className='text-gray-500'>취소</Text>
+          <Text className='text-red-500'>취소</Text>
         </TouchableOpacity>
         <Text className='font-medium text-lg'>응원</Text>
         <TouchableOpacity onPress={handleSubmit} disabled={!content.trim()}>
