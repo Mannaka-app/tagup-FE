@@ -9,6 +9,7 @@ import '../global.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useFonts } from 'expo-font';
+
 // React Query 클라이언트 생성
 const queryClient = new QueryClient({
   defaultOptions: {
