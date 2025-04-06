@@ -8,9 +8,11 @@ import { uploadProfileImage, uploadImage } from '@/apis/mypage';
 import { router } from 'expo-router';
 import { logout, unlink } from '@react-native-kakao/user';
 import { Ionicons } from '@expo/vector-icons';
+import { useDeleteProfileImage } from '@/hooks/useDetailUser';
 
 export default function MyPageScreen() {
   const { clearAuth, user, setUser } = useAuthStore();
+  const { mutate: deleteProfileImage } = useDeleteProfileImage();
 
   useEffect(() => {
     console.log('프로필 URL:', user?.profileUrl);
@@ -79,9 +81,9 @@ export default function MyPageScreen() {
       Alert.alert('오류', '이미지 선택 및 업로드 중 문제가 발생했습니다.');
     }
   };
-
   const handleLogout = async () => {
     try {
+      // await logout();
       await clearAuth();
       router.replace('/login');
     } catch (error) {
@@ -127,7 +129,25 @@ export default function MyPageScreen() {
               />
             </View>
             <TouchableOpacity
-              onPress={pickImage}
+              onPress={() => {
+                Alert.alert('프로필 이미지', '원하시는 작업을 선택해주세요', [
+                  {
+                    text: '이미지 변경',
+                    onPress: pickImage,
+                  },
+                  {
+                    text: '이미지 삭제',
+                    onPress: () => {
+                      deleteProfileImage();
+                    },
+                    style: 'destructive',
+                  },
+                  {
+                    text: '취소',
+                    style: 'cancel',
+                  },
+                ]);
+              }}
               className='absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-sm'
             >
               <Ionicons name='camera' size={15} />
@@ -136,7 +156,7 @@ export default function MyPageScreen() {
           <Text className='mt-2 text-lg font-medium'>{user?.nickname}</Text>
         </View>
 
-        <View className='space-y-4'>
+        <View className='space-y-4 gap-y-4'>
           <TouchableOpacity
             onPress={() => router.push('/(edit)/user-edit')}
             className='bg-gray-100 py-4 rounded-lg flex-row items-center px-4'
