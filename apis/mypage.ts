@@ -32,3 +32,11 @@ export const uploadImage = async (
   console.log('이미지 업로드 응답:', response.data);
   return response.data;
 };
+
+export const deleteProfileImage = async () => {
+  const response = await fetcher<LoginResponse>({
+    url: '/users/profile-image',
+    method: 'DELETE',
+  });
+  return response.data;
+};
