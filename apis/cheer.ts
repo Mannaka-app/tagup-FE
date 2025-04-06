@@ -9,6 +9,7 @@ export interface CheerTalk {
   content: string;
   createdAt: string;
   likes: number;
+  isLiked: boolean;
 }
 
 export interface CheerResponse {
@@ -21,6 +22,47 @@ export const getCheer = async (): Promise<CheerResponse> => {
     url: '/cheer',
     method: 'GET',
   });
-  console.log('응원톡 데이터:', response.data);
+  return response.data;
+};
+
+export interface PostCheerResponse {
+  success: boolean;
+  message: string;
+}
+
+export const postCheer = async (content: string) => {
+  const response = await fetcher<PostCheerResponse>({
+    url: '/cheer',
+    method: 'POST',
+    data: { content },
+  });
+  return response.data;
+};
+
+export interface LikeCheerResponse {
+  success: boolean;
+  message: string;
+}
+
+export const likeCheer = async (cheerTalkId: number) => {
+  const response = await fetcher<LikeCheerResponse>({
+    url: `/cheer/likes`,
+    method: 'POST',
+    data: { cheerTalkId },
+  });
+  return response.data;
+};
+
+export interface DeleteCheerResponse {
+  success: boolean;
+  message: string;
+}
+
+export const deleteCheer = async (cheerTalkId: number) => {
+  const response = await fetcher<DeleteCheerResponse>({
+    url: `/cheer`,
+    method: 'DELETE',
+    data: { cheerTalkId },
+  });
   return response.data;
 };

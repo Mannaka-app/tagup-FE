@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { type CheerTalk } from '@/apis/cheer';
-import { useCheers } from '@/hooks/useCheer';
+import { router, useFocusEffect } from 'expo-router';
+import { useCheers, useLikeCheer, useDeleteCheer } from '@/hooks/useCheer';
+import { CheerTalk } from '@/apis/cheer';
 
 const formatTime = (dateString: string) => {
   const date = new Date(dateString);
@@ -22,15 +22,31 @@ const formatTime = (dateString: string) => {
 
 export default function Cheer() {
   const { user } = useAuthStore();
-  const { data: cheerTalks = [] } = useCheers();
-  const [likedPosts, setLikedPosts] = useState<number[]>([]);
+  const { data: cheerTalks = [], refetch } = useCheers();
+  const { mutate: likeCheer } = useLikeCheer();
+  const { mutate: deleteCheer } = useDeleteCheer();
 
-  const handleLike = (postId: number) => {
-    setLikedPosts((prev) =>
-      prev.includes(postId)
-        ? prev.filter((id) => id !== postId)
-        : [...prev, postId]
-    );
+  const handleLike = (cheerTalkId: number) => {
+    likeCheer(cheerTalkId);
+  };
+
+  const handleDelete = (cheerTalkId: number) => {
+    deleteCheer(cheerTalkId);
+  };
+
+  const handleWriteCheer = () => {
+    router.push('/cheer/CheerWrite');
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+
+  const isOwnCheerTalk = (cheerTalk: CheerTalk) => {
+    if (!user?.id) return false;
+    return cheerTalk.userId === user.id;
   };
 
   return (
@@ -39,19 +55,28 @@ export default function Cheer() {
         {cheerTalks.map((cheerTalk) => (
           <View key={cheerTalk.id} className='border-b border-gray-200'>
             <View className='flex flex-col px-5 py-4 gap-[20px]'>
-              <View className='flex-row items-center gap-[10px]'>
-                <Image
-                  source={{ uri: cheerTalk.profileUrl }}
-                  className='w-10 h-10 rounded-full bg-gray-100'
-                />
-                <View className='flex flex-col gap-[5px]'>
-                  <Text className='font-regular text-sm'>
-                    {cheerTalk.nickname}
-                  </Text>
-                  <Text className='font-light text-gray-500 text-xs'>
-                    {formatTime(cheerTalk.createdAt)}
-                  </Text>
+              <View className='flex-row items-start justify-between'>
+                <View className='flex-row items-center gap-[10px]'>
+                  {/* 프로필 이미지 */}
+                  <Image
+                    source={{ uri: cheerTalk.profileUrl }}
+                    className='w-10 h-10 rounded-full bg-gray-100'
+                  />
+                  {/* 닉네임, 시간 */}
+                  <View className='flex flex-col gap-[5px]'>
+                    <Text className='font-regular text-sm'>
+                      {cheerTalk.nickname}
+                    </Text>
+                    <Text className='font-light text-gray-500 text-xs'>
+                      {formatTime(cheerTalk.createdAt)}
+                    </Text>
+                  </View>
                 </View>
+                {isOwnCheerTalk(cheerTalk) && (
+                  <TouchableOpacity onPress={() => handleDelete(cheerTalk.id)}>
+                    <Text className='text-red-500 text-sm'>삭제</Text>
+                  </TouchableOpacity>
+                )}
               </View>
               <View>
                 <Text className='text-sm font-light'>{cheerTalk.content}</Text>
@@ -60,22 +85,13 @@ export default function Cheer() {
                 <View className='flex flex-row items-center gap-[3px]'>
                   <TouchableOpacity onPress={() => handleLike(cheerTalk.id)}>
                     <Ionicons
-                      name={
-                        likedPosts.includes(cheerTalk.id)
-                          ? 'heart'
-                          : 'heart-outline'
-                      }
+                      name={cheerTalk.isLiked ? 'heart' : 'heart-outline'}
                       size={14}
-                      color={
-                        likedPosts.includes(cheerTalk.id)
-                          ? user?.teams?.color
-                          : '#6B7280'
-                      }
+                      color={cheerTalk.isLiked ? user?.teams?.color : '#6B7280'}
                     />
                   </TouchableOpacity>
                   <Text className='text-gray-500 font-light text-sm'>
-                    {cheerTalk.likes +
-                      (likedPosts.includes(cheerTalk.id) ? 1 : 0)}
+                    {cheerTalk.likes}
                   </Text>
                 </View>
               </View>
@@ -85,7 +101,7 @@ export default function Cheer() {
       </ScrollView>
       <View className='absolute z-50 bottom-0 right-0 left-0 p-4 bg-transparent'>
         <TouchableOpacity
-          onPress={() => router.push('/cheer/CheerWrite')}
+          onPress={handleWriteCheer}
           className='self-end px-4 py-3 rounded-full'
           style={{ backgroundColor: user?.teams?.color }}
         >
