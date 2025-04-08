@@ -35,15 +35,16 @@ export default function HomeScreen() {
           className='px-5 py-3 flex-row items-center border-b border-gray-200'
           style={{ backgroundColor: `${user?.teams?.color}` }}
         >
-          <View className='flex-row items-center'>
-            <Text className='text-xl font-regular text-white'>
+          <View className='flex-row w-full items-center justify-between'>
+            <Text className='text-xl font-logo text-white'>tagup</Text>
+            <Text className='text-xl font-semibold text-white'>
               {user?.teams?.emoji} {user?.teams?.name}
             </Text>
           </View>
         </View>
 
         {/* 세그먼트 탭 */}
-        <View className='flex-row border-b border-gray-200'>
+        <View className='flex-row items-center'>
           {(['직관방', '응원', '경기일정'] as TabType[]).map((tab) => (
             <TouchableOpacity
               key={tab}
@@ -52,7 +53,7 @@ export default function HomeScreen() {
               style={{
                 borderBottomWidth: 2,
                 borderBottomColor:
-                  activeTab === tab ? user?.teams?.color : '#e5e7eb',
+                  activeTab === tab ? user?.teams?.color : '#ffffff',
               }}
             >
               <Text
