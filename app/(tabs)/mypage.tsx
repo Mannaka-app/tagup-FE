@@ -36,10 +36,9 @@ export default function MyPageScreen() {
       const localUri = result.assets[0].uri;
       console.log('선택된 이미지 URI:', localUri);
 
-      // expo-image-manipulator를 사용해 이미지 압축 (예: JPEG로 50% 압축)
       const manipResult = await ImageManipulator.manipulateAsync(localUri, [], {
-        compress: 0.5,
-        format: ImageManipulator.SaveFormat.JPEG,
+        compress: 0.8,
+        format: ImageManipulator.SaveFormat.WEBP,
       });
       const compressedUri = manipResult.uri;
       console.log('압축된 이미지 URI:', compressedUri);
