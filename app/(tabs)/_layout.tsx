@@ -1,21 +1,24 @@
 import { Tabs } from 'expo-router';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { TouchableOpacity, Text, StyleSheet, Image } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function TabLayout() {
+  const { user } = useAuthStore();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          height: 85,
+          height: 70,
           paddingTop: 5,
           paddingBottom: 30,
           backgroundColor: 'white',
           borderTopWidth: 0.5,
           borderTopColor: '#E5E5EA',
         },
-        tabBarActiveTintColor: '#007AFF',
+        tabBarActiveTintColor: '#black',
         tabBarInactiveTintColor: '#8E8E93',
         tabBarShowLabel: false,
       }}
@@ -24,7 +27,11 @@ export default function TabLayout() {
         name='index'
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name='home-outline' size={24} color={color} />
+            <MaterialCommunityIcons
+              name='home-variant'
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
@@ -32,7 +39,7 @@ export default function TabLayout() {
         name='feed'
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name='newspaper-outline' size={24} color={color} />
+            <Ionicons name='baseball-outline' size={24} color={color} />
           ),
         }}
       />
@@ -40,16 +47,22 @@ export default function TabLayout() {
         name='chat'
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name='chatbubble-outline' size={24} color={color} />
+            <Ionicons name='paper-plane-outline' size={22} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name='mypage'
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name='person-outline' size={24} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) =>
+            user?.profileUrl ? (
+              <Image
+                source={{ uri: user.profileUrl }}
+                className='w-7 h-7 border-[0.11px] border-gray-500 rounded-full'
+              />
+            ) : (
+              <Ionicons name='person-outline' size={24} color={color} />
+            ),
         }}
       />
     </Tabs>
