@@ -60,7 +60,7 @@ export default function Cheer() {
                   {/* 프로필 이미지 */}
                   <Image
                     source={{ uri: cheerTalk.profileUrl }}
-                    className='w-10 h-10 rounded-full bg-gray-100'
+                    className='w-10 h-10 rounded-full bg-gray-100 border-[0.1px] border-gray-700'
                   />
                   {/* 닉네임, 시간 */}
                   <View className='flex flex-col gap-[5px]'>
@@ -105,7 +105,7 @@ export default function Cheer() {
           className='self-end px-4 py-3 rounded-full'
           style={{ backgroundColor: user?.teams?.color }}
         >
-          <Text className='text-white font-medium text-base'>+ 응원</Text>
+          <Text className='text-white font-regular text-base'>+ 응원</Text>
         </TouchableOpacity>
       </View>
     </View>
