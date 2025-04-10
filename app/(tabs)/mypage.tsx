@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -9,9 +9,11 @@ import { router } from 'expo-router';
 import { logout, unlink } from '@react-native-kakao/user';
 import { Ionicons } from '@expo/vector-icons';
 import { useDeleteProfileImage } from '@/hooks/useDetailUser';
+import { useSocket } from '@/hooks/useSocket';
 
 export default function MyPageScreen() {
   const { clearAuth, user, setUser } = useAuthStore();
+  const { disconnect } = useSocket();
   const { mutate: deleteProfileImage } = useDeleteProfileImage();
 
   useEffect(() => {
@@ -20,7 +22,6 @@ export default function MyPageScreen() {
 
   const pickImage = async () => {
     try {
-      // 이미지 선택 실행
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
@@ -28,11 +29,8 @@ export default function MyPageScreen() {
         aspect: [1, 1],
       });
 
-      if (result.canceled) {
-        return;
-      }
+      if (result.canceled) return;
 
-      // 선택된 이미지 URI
       const localUri = result.assets[0].uri;
       console.log('선택된 이미지 URI:', localUri);
 
@@ -43,22 +41,17 @@ export default function MyPageScreen() {
       const compressedUri = manipResult.uri;
       console.log('압축된 이미지 URI:', compressedUri);
 
-      // 파일명 및 타입 추출
       const filename = compressedUri.split('/').pop() || 'profile.jpg';
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : 'image';
-      console.log('파일 정보:', { filename, type });
 
-      // FormData 생성
       const formData = new FormData();
       formData.append('file', {
         uri: compressedUri,
         name: filename,
         type,
       } as any);
-      console.log('생성된 FormData:', formData);
 
-      // S3에 이미지 업로드 (fetcher 내 Axios에서 Content-Type 헤더를 자동으로 설정하도록 함)
       console.log('이미지 업로드 시작...');
       const uploadResponse = await uploadImage(formData);
       console.log('이미지 업로드 응답:', uploadResponse);
@@ -68,21 +61,22 @@ export default function MyPageScreen() {
         return;
       }
 
-      // 업로드된 imageUrl을 이용해 프로필 이미지 업데이트 API 호출
       console.log('프로필 이미지 업데이트 시작...');
       const profileResponse = await uploadProfileImage(uploadResponse.imageUrl);
       console.log('프로필 이미지 업데이트 응답:', profileResponse);
 
-      // 상태 업데이트
       setUser(profileResponse.user);
     } catch (error) {
       console.error('pickImage 오류:', error);
       Alert.alert('오류', '이미지 선택 및 업로드 중 문제가 발생했습니다.');
     }
   };
+
   const handleLogout = async () => {
     try {
+      // 필요한 경우 카카오 로그아웃 호출
       // await logout();
+      disconnect();
       await clearAuth();
       router.replace('/login');
     } catch (error) {
@@ -91,18 +85,16 @@ export default function MyPageScreen() {
     }
   };
 
-  const handleUnlink = async () => {
+  const handleUnlink = () => {
     Alert.alert('회원 탈퇴', '정말로 탈퇴하시겠습니까?', [
-      {
-        text: '취소',
-        style: 'cancel',
-      },
+      { text: '취소', style: 'cancel' },
       {
         text: '탈퇴',
         style: 'destructive',
         onPress: async () => {
           try {
             await unlink();
+            disconnect();
             await clearAuth();
             router.replace('/login');
           } catch (error) {
@@ -130,21 +122,13 @@ export default function MyPageScreen() {
             <TouchableOpacity
               onPress={() => {
                 Alert.alert('프로필 이미지', '원하시는 작업을 선택해주세요', [
-                  {
-                    text: '이미지 변경',
-                    onPress: pickImage,
-                  },
+                  { text: '이미지 변경', onPress: pickImage },
                   {
                     text: '이미지 삭제',
-                    onPress: () => {
-                      deleteProfileImage();
-                    },
+                    onPress: () => deleteProfileImage(),
                     style: 'destructive',
                   },
-                  {
-                    text: '취소',
-                    style: 'cancel',
-                  },
+                  { text: '취소', style: 'cancel' },
                 ]);
               }}
               className='absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-sm'
@@ -210,6 +194,7 @@ export default function MyPageScreen() {
               로그아웃
             </Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             onPress={handleUnlink}
             className='bg-red-50 py-4 rounded-lg flex-row items-center px-4'
