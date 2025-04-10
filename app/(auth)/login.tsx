@@ -1,3 +1,4 @@
+// LoginScreen.tsx
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { initializeKakaoSDK } from '@react-native-kakao/core';
@@ -8,9 +9,11 @@ import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { kakaoLogin } from '@/apis/auth';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useSocket } from '@/hooks/useSocket';
 
 export default function LoginScreen() {
   const { setAuth } = useAuthStore();
+  const { connect } = useSocket();
 
   useEffect(() => {
     const kakaoKey = Constants.expoConfig?.extra?.kakaoNativeAppKey;
@@ -21,29 +24,26 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     try {
-      // react-native-kakao 로그인을 통한 카카오 로그인
       const response = await login();
-
       console.log('로그인 응답:', response);
 
-      // response.idToken을 백엔드에 로그인 요청
       if (!response.idToken) {
         throw new Error('idToken이 없습니다.');
       }
       const loginResponse = await kakaoLogin(response.idToken);
       console.log('백엔드 로그인 응답:', loginResponse);
 
-      // 인증 상태 업데이트
-      setAuth({
+      await setAuth({
         user: loginResponse.user,
         accessToken: loginResponse.accessToken,
         refreshToken: loginResponse.refreshToken,
       });
 
-      // 상태 업데이트가 완료될 때까지 잠시 대기
+      connect();
+
+      // 짧은 대기 후 라우팅 처리
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // 사용자 정보 상태에 따라 라우팅
       if (loginResponse.user.nickname && loginResponse.user.gender) {
         router.replace('/(tabs)');
       } else {

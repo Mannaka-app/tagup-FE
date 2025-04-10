@@ -1,3 +1,4 @@
+// LocalLoginScreen.tsx
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -5,9 +6,11 @@ import { router } from 'expo-router';
 import { localLogin } from '@/apis/auth';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Ionicons } from '@expo/vector-icons';
+import { useSocket } from '@/hooks/useSocket';
 
 export default function LocalLoginScreen() {
   const { setAuth } = useAuthStore();
+  const { connect } = useSocket();
   const [email, setEmail] = useState('test@email.com');
   const [password, setPassword] = useState('1234');
 
@@ -15,14 +18,14 @@ export default function LocalLoginScreen() {
     try {
       const loginResponse = await localLogin(email, password);
 
-      setAuth({
+      await setAuth({
         user: loginResponse.user,
         accessToken: loginResponse.accessToken,
         refreshToken: loginResponse.refreshToken,
       });
 
-      // 상태 업데이트가 완료될 때까지 잠시 대기
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // 웹소켓 연결 (useSocket의 useEffect에도 자동 연결이 있지만, 명시적 호출 가능)
+      connect();
 
       if (loginResponse.user.nickname && loginResponse.user.gender) {
         router.replace('/(tabs)');
