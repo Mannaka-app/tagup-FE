@@ -2,20 +2,20 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/useAuthStore';
-import LiveRoom from '../components/home/LiveRoom';
+
 import Cheer from '../components/home/Cheer';
 import Schedule from '../components/home/Schedule';
 
-type TabType = '직관방' | '응원' | '경기일정';
+type TabType = '응원' | '경기일정';
 
 export default function HomeScreen() {
-  const [activeTab, setActiveTab] = useState<TabType>('직관방');
-  const { user } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<TabType>('응원');
+  const { user, accessToken } = useAuthStore();
 
   const renderContent = () => {
+    if (!accessToken) return null;
+
     switch (activeTab) {
-      case '직관방':
-        return <LiveRoom />;
       case '응원':
         return <Cheer />;
       case '경기일정':
@@ -45,7 +45,7 @@ export default function HomeScreen() {
 
         {/* 세그먼트 탭 */}
         <View className='flex-row items-center'>
-          {(['직관방', '응원', '경기일정'] as TabType[]).map((tab) => (
+          {(['응원', '경기일정'] as TabType[]).map((tab) => (
             <TouchableOpacity
               key={tab}
               onPress={() => setActiveTab(tab)}
