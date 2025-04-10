@@ -9,12 +9,13 @@ import {
 import { useAuthStore } from '@/store/useAuthStore';
 
 export const useCheers = () => {
-  const { user } = useAuthStore();
+  const { user, accessToken } = useAuthStore();
   const { data, refetch } = useQuery<CheerResponse['cheerTalks']>({
     queryKey: ['cheers', user?.teams?.id],
     queryFn: () => getCheer().then((res) => res.cheerTalks),
     staleTime: 0,
     gcTime: 0,
+    enabled: !!accessToken && !!user?.teams?.id,
   });
 
   return { data, refetch };
