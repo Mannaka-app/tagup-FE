@@ -2,7 +2,6 @@ import { Tabs } from 'expo-router';
 import { TouchableOpacity, Text, StyleSheet, Image } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/useAuthStore';
-
 export default function TabLayout() {
   const { user } = useAuthStore();
 
@@ -40,6 +39,14 @@ export default function TabLayout() {
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name='baseball-outline' size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name='offline'
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name='chatbox-outline' size={24} color={color} />
           ),
         }}
       />
