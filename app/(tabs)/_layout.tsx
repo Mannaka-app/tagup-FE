@@ -15,7 +15,7 @@ export default function TabLayout() {
           paddingBottom: 30,
           backgroundColor: 'white',
           borderTopWidth: 0.5,
-          borderTopColor: '#E5E5EA',
+          borderTopColor: '#f5f5f5',
         },
         tabBarActiveTintColor: '#black',
         tabBarInactiveTintColor: '#8E8E93',
@@ -38,15 +38,15 @@ export default function TabLayout() {
         name='feed'
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name='baseball-outline' size={24} color={color} />
+            <Ionicons name='create-outline' size={24} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name='offline'
+        name='joinRoom'
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name='chatbox-outline' size={24} color={color} />
+            <Ionicons name='baseball-outline' size={24} color={color} />
           ),
         }}
       />
