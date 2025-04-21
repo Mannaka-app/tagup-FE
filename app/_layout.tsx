@@ -4,7 +4,7 @@ import {
   useRouter,
   useSegments,
 } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import '../global.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -24,7 +24,8 @@ export default function RootLayout() {
   const segments = useSegments();
   const router = useRouter();
   const navigationState = useRootNavigationState();
-  const { accessToken } = useAuthStore();
+  const { accessToken, restoreAuth } = useAuthStore();
+  const [authChecked, setAuthChecked] = useState(false);
 
   // 폰트 로드
   const [fontsLoaded] = useFonts({
@@ -41,18 +42,23 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (!navigationState?.key) return;
+    (async () => {
+      await restoreAuth();
+      setAuthChecked(true);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!navigationState?.key || !authChecked) return;
 
     const inAuthGroup = segments[0] === '(auth)';
 
-    // 로그인되지 않은 경우
     if (!accessToken && !inAuthGroup) {
       router.replace('/login');
     }
-  }, [segments, navigationState?.key, accessToken]);
+  }, [segments, navigationState?.key, accessToken, authChecked]);
 
-  // 폰트가 로드되기 전까지는 null을 반환
-  if (!fontsLoaded) {
+  if (!fontsLoaded || !authChecked) {
     return null;
   }
 
