@@ -1,5 +1,4 @@
 import fetcher from '@/utils/fetcher';
-import { axiosInstance } from './@core';
 import * as SecureStore from 'expo-secure-store';
 
 export interface UserDetailDto {
@@ -74,5 +73,20 @@ export const localLogin = async (
   await SecureStore.setItemAsync('accessToken', accessToken);
   await SecureStore.setItemAsync('refreshToken', refreshToken);
   console.log('로그인 응답:', response.data);
+  return response.data;
+};
+
+export interface DeleteUserResponse {
+  success: boolean;
+  message: string;
+}
+
+export const deleteUser = async (
+  userId: number
+): Promise<DeleteUserResponse> => {
+  const response = await fetcher<DeleteUserResponse>({
+    url: `/users/${userId}`,
+    method: 'DELETE',
+  });
   return response.data;
 };
