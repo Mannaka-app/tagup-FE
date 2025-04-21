@@ -1,6 +1,0 @@
-module RNCKakaoCore {
-  umbrella header "RNCKakaoCore-umbrella.h"
-
-  export *
-  module * { export * }
-}
