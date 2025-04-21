@@ -61,11 +61,10 @@ export default function CreateFeedScreen() {
 
       console.log('이미지 업로드 시작...');
       setUploading(true);
-      const uploadResponse = await uploadImage(formData);
-      console.log('이미지 업로드 응답:', uploadResponse);
 
       uploadImage(formData, {
         onSuccess: (response) => {
+          console.log('이미지 업로드 응답:', response);
           if (response.success) {
             setImages([...images, response.imageUrl]);
           } else {
@@ -149,10 +148,11 @@ export default function CreateFeedScreen() {
         {/* 이미지 미리보기 */}
         <View className='flex-row flex-wrap px-5'>
           {images.map((uri, index) => (
-            <View key={index} className='w-1/3 p-1'>
+            <View key={index} className='w-1/2 p-2'>
               <Image
                 source={{ uri }}
-                className='w-full aspect-square rounded-lg'
+                className='w-full h-48 rounded-lg'
+                resizeMode='cover'
               />
             </View>
           ))}
