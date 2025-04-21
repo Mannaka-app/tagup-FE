@@ -1,23 +1,43 @@
-import React, { useState } from 'react';
+// 피드 이미지 배열 탭
+
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   Image,
   TouchableOpacity,
   Dimensions,
-  FlatList,
+  ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useFeed } from '@/hooks/useFeed';
+import { useFeed, useDeleteFeed } from '@/hooks/useFeed';
 import { router } from 'expo-router';
 import FeedCommentModal from '@/app/components/FeedCommentModal';
+import { Feed, FeedResponse } from '@/apis/feed';
+import { InfiniteData } from '@tanstack/react-query';
 
 const WINDOW_WIDTH = Dimensions.get('window').width;
-const POST_WIDTH = WINDOW_WIDTH;
+const GAP_SIZE = 12; // 가로 간격 증가
+const VERTICAL_GAP = 20; // 세로 간격 증가
+const NUMBER_OF_COLUMNS = 2;
+const CONTENT_PADDING = 12; // 전체 패딩 증가
+const USABLE_WIDTH =
+  WINDOW_WIDTH - CONTENT_PADDING * 2 - GAP_SIZE * (NUMBER_OF_COLUMNS - 1);
+const COLUMN_WIDTH = USABLE_WIDTH / NUMBER_OF_COLUMNS;
+
+// URL을 기반으로 고정된 비율을 생성하는 함수
+const getAspectRatioFromUrl = (url: string) => {
+  // URL의 각 문자의 아스키 코드 값을 합산
+  const sum = url.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  // 합산 값을 0과 1 사이의 값으로 정규화
+  const normalizedValue = (sum % 100) / 100;
+  // 1 ~ 1.25 사이의 값으로 매핑
+  return 1 + normalizedValue * 0.25;
+};
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -37,19 +57,145 @@ const formatDate = (dateString: string) => {
 };
 
 export default function FeedScreen() {
-  const { data: feedData, isLoading } = useFeed();
-  const { user } = useAuthStore();
-  const [currentImageIndices, setCurrentImageIndices] = useState<{
-    [key: number]: number;
-  }>({});
-  const [showMenu, setShowMenu] = useState<number | null>(null);
+  const {
+    data: feedData,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useFeed() as {
+    data: InfiniteData<FeedResponse> | undefined;
+    isLoading: boolean;
+    fetchNextPage: () => Promise<unknown>;
+    hasNextPage: boolean;
+    isFetchingNextPage: boolean;
+  };
+  const deleteFeed = useDeleteFeed();
   const [showCommentModal, setShowCommentModal] = useState<number | null>(null);
 
-  const handleImageIndexChange = (feedId: number, index: number) => {
-    setCurrentImageIndices((prev) => ({
-      ...prev,
-      [feedId]: index,
-    }));
+  // 이미지 프리로딩
+  useEffect(() => {
+    if (!feedData?.pages[0].feed) return;
+
+    // 화면에 보이는 이미지만 우선 프리로드 (처음 10개)
+    const imagesToPreload = feedData.pages[0].feed
+      .slice(0, 10)
+      .map((feed: Feed) => feed.image);
+
+    // 프리로드 시작
+    Promise.all(imagesToPreload.map((url: string) => Image.prefetch(url))).then(
+      () => {
+        console.log('First batch of images preloaded');
+
+        // 나머지 이미지들은 낮은 우선순위로 프리로드
+        if (feedData.pages[0].feed.length > 10) {
+          const remainingImages = feedData.pages[0].feed
+            .slice(10)
+            .map((feed: Feed) => feed.image);
+          Promise.all(
+            remainingImages.map((url: string) => Image.prefetch(url))
+          ).then(() => console.log('Remaining images preloaded'));
+        }
+      }
+    );
+  }, [feedData?.pages[0].feed]);
+
+  const handleLoadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
+
+  // 모든 페이지의 피드 데이터를 하나의 배열로 합치기
+  const allFeeds =
+    feedData?.pages.reduce((acc: Feed[], page: FeedResponse) => {
+      return [...acc, ...page.feed];
+    }, [] as Feed[]) || [];
+
+  // 이미지 크기 계산 및 컬럼 분배
+  const allImages = allFeeds.reduce(
+    (
+      acc: { id: number; imageUrl: string; width: number; height: number }[],
+      feed: Feed
+    ) => {
+      const aspectRatio = getAspectRatioFromUrl(feed.image);
+      const height = COLUMN_WIDTH * aspectRatio;
+
+      return [
+        ...acc,
+        {
+          id: feed.id,
+          imageUrl: feed.image,
+          width: COLUMN_WIDTH,
+          height,
+        },
+      ];
+    },
+    []
+  );
+
+  // 이미지를 두 컬럼으로 분배
+  const [leftColumn, rightColumn] = allImages.reduce<
+    Array<{ items: typeof allImages; height: number }>
+  >(
+    (columns, image) => {
+      if (columns[0].height <= columns[1].height) {
+        columns[0].items.push(image);
+        columns[0].height += image.height + VERTICAL_GAP;
+      } else {
+        columns[1].items.push(image);
+        columns[1].height += image.height + VERTICAL_GAP;
+      }
+      return columns;
+    },
+    [
+      { items: [], height: 0 },
+      { items: [], height: 0 },
+    ]
+  );
+
+  const renderColumn = (items: typeof allImages, isLeft: boolean) => (
+    <View style={{ flex: 1 }}>
+      {items.map((item, index) => (
+        <TouchableOpacity
+          key={`${item.id}-${index}`}
+          onPress={() => router.push(`/feed/${item.id}`)}
+          style={{
+            width: '100%',
+            height: item.height,
+            marginBottom: VERTICAL_GAP,
+            backgroundColor: '#f0f0f0',
+            borderRadius: 8,
+            overflow: 'hidden',
+          }}
+        >
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={{
+              width: '100%',
+              height: '100%',
+            }}
+            resizeMode='cover'
+          />
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  const handleDeleteFeed = (feedId: number) => {
+    Alert.alert('게시물 삭제', '정말로 이 게시물을 삭제하시겠습니까?', [
+      {
+        text: '취소',
+        style: 'cancel',
+      },
+      {
+        text: '삭제',
+        style: 'destructive',
+        onPress: () => {
+          deleteFeed.mutate(feedId);
+        },
+      },
+    ]);
   };
 
   if (isLoading) {
@@ -65,152 +211,43 @@ export default function FeedScreen() {
   return (
     <SafeAreaView className='flex-1 bg-white' edges={['top']}>
       {/* 헤더 */}
-      <View className='flex-row items-center justify-between px-5 py-3 border-b border-gray-200'>
-        <Text className='text-xl font-logo'>tagup</Text>
-        <TouchableOpacity onPress={() => router.push('/feed/create')}>
-          <Ionicons name='add-circle-outline' size={24} color='black' />
-        </TouchableOpacity>
+      <View className='flex-row items-center justify-between px-5 py-4'>
+        <Text className='text-xl font-logo'>Post</Text>
+        <View className='flex-row items-center gap-4'>
+          <TouchableOpacity onPress={() => router.push('/feed/create')}>
+            <Ionicons name='add-outline' size={22} color='black' />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* 피드 목록 */}
-      <ScrollView className='flex-1'>
-        {feedData?.feed.map((feed) => (
-          <View key={feed.id} className='border-b border-gray-200'>
-            {/* 게시물 헤더 */}
-            <View className='flex-row items-center justify-between px-5 py-3'>
-              <View className='flex-row items-center flex-1'>
-                <Image
-                  source={{ uri: feed.profileUrl }}
-                  className='w-8 h-8 rounded-full mr-2'
-                />
-                <View>
-                  <Text className='font-medium'>{feed.nickName}</Text>
-                  <Text className='text-xs text-gray-500'>
-                    {formatDate(feed.createdAt)}
-                  </Text>
-                </View>
-              </View>
-              {user?.id === feed.userId && (
-                <TouchableOpacity
-                  onPress={() =>
-                    setShowMenu(showMenu === feed.id ? null : feed.id)
-                  }
-                >
-                  <Ionicons
-                    name='ellipsis-horizontal'
-                    size={20}
-                    color='black'
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          padding: CONTENT_PADDING,
+          paddingBottom: CONTENT_PADDING + 20,
+        }}
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const isCloseToBottom =
+            layoutMeasurement.height + contentOffset.y >=
+            contentSize.height - 50;
 
-            {/* 메뉴 모달 */}
-            {showMenu === feed.id && (
-              <View className='absolute right-5 top-12 bg-white rounded-lg shadow-lg z-10'>
-                <TouchableOpacity
-                  className='px-4 py-3'
-                  onPress={() => {
-                    setShowMenu(null);
-                    Alert.alert(
-                      '게시물 삭제',
-                      '정말로 이 게시물을 삭제하시겠습니까?',
-                      [
-                        {
-                          text: '취소',
-                          style: 'cancel',
-                        },
-                        {
-                          text: '삭제',
-                          style: 'destructive',
-                          onPress: () => {
-                            // TODO: 게시물 삭제 API 호출
-                          },
-                        },
-                      ]
-                    );
-                  }}
-                >
-                  <Text className='text-red-500'>삭제</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* 게시물 이미지 */}
-            <View className='w-full' style={{ height: POST_WIDTH }}>
-              <FlatList
-                data={feed.images}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(item, index) => index.toString()}
-                onMomentumScrollEnd={(event) => {
-                  const index = Math.round(
-                    event.nativeEvent.contentOffset.x / POST_WIDTH
-                  );
-                  handleImageIndexChange(feed.id, index);
-                }}
-                renderItem={({ item }) => (
-                  <Image
-                    source={{ uri: item }}
-                    className='w-full h-full'
-                    style={{ width: POST_WIDTH, height: POST_WIDTH }}
-                    resizeMode='cover'
-                  />
-                )}
-              />
-              {feed.images.length > 1 && (
-                <View className='absolute bottom-2 left-0 right-0 flex-row justify-center items-center'>
-                  {feed.images.map((_, index) => (
-                    <View
-                      key={index}
-                      className={`w-2 h-2 rounded-full mx-1 ${
-                        currentImageIndices[feed.id] === index
-                          ? 'bg-white'
-                          : 'bg-white/50'
-                      }`}
-                    />
-                  ))}
-                </View>
-              )}
-            </View>
-
-            {/* 게시물 액션 버튼 */}
-            <View className='flex-row items-center gap-[10px] py-2 px-5'>
-              <View className='flex-row items-center'>
-                <TouchableOpacity>
-                  <Ionicons
-                    name={feed.isLiked ? 'heart' : 'heart-outline'}
-                    size={24}
-                    color={feed.isLiked ? '#ff0000' : 'black'}
-                  />
-                </TouchableOpacity>
-                <Text className='text-black text-sm ml-1'>{feed.likes}</Text>
-              </View>
-              <View className='flex-row items-center'>
-                <TouchableOpacity onPress={() => setShowCommentModal(feed.id)}>
-                  <Ionicons name='chatbubble-outline' size={24} color='black' />
-                </TouchableOpacity>
-                <Text className='text-black text-sm ml-1'>{feed.comments}</Text>
-              </View>
-            </View>
-
-            {/* 게시물 내용 */}
-            <View className='px-5 py-2'>
-              <Text>
-                <Text className='font-medium'>{feed.nickName}</Text>{' '}
-                {feed.content}
-              </Text>
-            </View>
+          if (isCloseToBottom) {
+            handleLoadMore();
+          }
+        }}
+        scrollEventThrottle={400}
+      >
+        <View style={{ flexDirection: 'row', gap: GAP_SIZE }}>
+          {renderColumn(leftColumn.items, true)}
+          {renderColumn(rightColumn.items, false)}
+        </View>
+        {isFetchingNextPage && (
+          <View className='py-4 items-center'>
+            <ActivityIndicator color='#0000ff' />
           </View>
-        ))}
+        )}
       </ScrollView>
-
-      <FeedCommentModal
-        visible={showCommentModal !== null}
-        onClose={() => setShowCommentModal(null)}
-        feedId={showCommentModal || 0}
-      />
     </SafeAreaView>
   );
 }
