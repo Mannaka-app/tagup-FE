@@ -32,6 +32,7 @@ interface AuthState {
   }) => Promise<void>;
   setUser: (user: User) => void;
   clearAuth: () => Promise<void>;
+  restoreAuth: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -43,6 +44,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { user, accessToken, refreshToken } = data;
       await SecureStore.setItemAsync('accessToken', accessToken);
       await SecureStore.setItemAsync('refreshToken', refreshToken);
+      await SecureStore.setItemAsync('user', JSON.stringify(user));
       set({
         user: {
           id: user.id,
@@ -66,28 +68,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   setUser: (user) => {
-    set((state) => ({
-      ...state,
-      user: {
-        id: user.id,
-        nickname: user.nickname,
-        gender: user.gender,
-        teams: user.teams,
-        email: user.email,
-        authProvider: user.authProvider,
-        level: user.level,
-        winningRate: user.winningRate,
-        createdAt: user.createdAt,
-        profileUrl: user.profileUrl,
-        sub: user.sub,
-        teamSeletedAt: user.teamSeletedAt,
-      },
-    }));
+    set((state) => ({ ...state, user }));
   },
   clearAuth: async () => {
     try {
       await SecureStore.deleteItemAsync('accessToken');
       await SecureStore.deleteItemAsync('refreshToken');
+      await SecureStore.deleteItemAsync('user');
       set({
         user: null,
         accessToken: null,
@@ -95,6 +82,20 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
     } catch (err) {
       console.error('로그아웃 중 에러 발생:', err);
+    }
+  },
+  restoreAuth: async () => {
+    try {
+      const accessToken = await SecureStore.getItemAsync('accessToken');
+      const refreshToken = await SecureStore.getItemAsync('refreshToken');
+      const userStr = await SecureStore.getItemAsync('user');
+      const user = userStr ? (JSON.parse(userStr) as User) : null;
+
+      if (accessToken && refreshToken && user) {
+        set({ accessToken, refreshToken, user });
+      }
+    } catch (err) {
+      console.error('로그인 복원 중 에러 발생:', err);
     }
   },
 }));

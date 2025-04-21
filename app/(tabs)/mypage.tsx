@@ -10,6 +10,7 @@ import { logout, unlink } from '@react-native-kakao/user';
 import { Ionicons } from '@expo/vector-icons';
 import { useDeleteProfileImage } from '@/hooks/useDetailUser';
 import { useSocket } from '@/hooks/useSocket';
+import { deleteUser } from '@/apis/auth';
 
 export default function MyPageScreen() {
   const { clearAuth, user, setUser } = useAuthStore();
@@ -94,6 +95,7 @@ export default function MyPageScreen() {
         onPress: async () => {
           try {
             await unlink();
+            await deleteUser(user?.id as number);
             disconnect();
             await clearAuth();
             router.replace('/login');
