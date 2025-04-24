@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getTeams, Team } from '@/apis/teams';
@@ -83,7 +83,11 @@ export default function TeamScreen() {
                 }}
               >
                 <View className='items-center gap-[10px]'>
-                  <Text className='text-2xl'>{team.emoji}</Text>
+                  <Image
+                    source={{ uri: team.badge }}
+                    className='w-[100px] h-[100px]'
+                    resizeMode='contain'
+                  />
                   <Text className='font-light text-center'>{team.name}</Text>
                 </View>
               </TouchableOpacity>

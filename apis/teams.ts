@@ -6,6 +6,8 @@ export interface Team {
   name: string;
   emoji: string;
   color: string;
+  logo: string;
+  badge: string;
 }
 
 // 팀 전체 정보 들고오는 api

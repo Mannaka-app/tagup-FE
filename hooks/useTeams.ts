@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { getTeams, updateTeam } from '@/apis/teams';
-import { Team } from '@/types/team';
+import type { Team } from '@/apis/teams';
 import { useAuthStore } from '@/store/useAuthStore';
 
 // 팀 전체 정보 들고오는 훅
