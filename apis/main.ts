@@ -41,6 +41,46 @@ export const getWeeklyGames = async (): Promise<GameScheduleResponse> => {
     url: '/game/week',
     method: 'GET',
   });
-  console.log(response.data);
+  return response.data;
+};
+
+export interface GameRankingStandings {
+  id: number;
+  teamId: number;
+  rank: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  winrRate: number;
+}
+
+export interface GameRankingResponse {
+  success: boolean;
+  message: string;
+  standings: GameRankingStandings[];
+}
+
+// 이번 주 KBO 순위 조회
+export const getRankings = async (): Promise<GameRankingResponse> => {
+  const response = await fetcher<GameRankingResponse>({
+    url: '/game/rank',
+    method: 'GET',
+  });
+  return response.data;
+};
+
+export interface TeamScheduleResponse {
+  success: boolean;
+  schedules: GameSchedule[];
+}
+
+// 팀 경기 일정 조회
+export const getTeamSchedule = async (
+  teamId: number
+): Promise<TeamScheduleResponse> => {
+  const response = await fetcher<TeamScheduleResponse>({
+    url: `/game/team/${teamId}`,
+    method: 'GET',
+  });
   return response.data;
 };
