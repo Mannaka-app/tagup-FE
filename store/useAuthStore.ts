@@ -10,6 +10,8 @@ interface User {
     name: string;
     emoji: string;
     color: string;
+    badge: string;
+    logo: string;
   } | null;
   email: string | null;
   authProvider: string;
