@@ -66,7 +66,13 @@ export default function MyPageScreen() {
       const profileResponse = await uploadProfileImage(uploadResponse.imageUrl);
       console.log('프로필 이미지 업데이트 응답:', profileResponse);
 
-      setUser(profileResponse.user);
+      const userWithTeamFields = {
+        ...profileResponse.user,
+        teams: profileResponse.user.teams
+          ? { ...profileResponse.user.teams, badge: '', logo: '' }
+          : null,
+      };
+      setUser(userWithTeamFields);
     } catch (error) {
       console.error('pickImage 오류:', error);
       Alert.alert('오류', '이미지 선택 및 업로드 중 문제가 발생했습니다.');
@@ -165,10 +171,7 @@ export default function MyPageScreen() {
                 응원팀 변경
               </Text>
               <Text className='text-gray-500 ml-3 text-sm'>
-                현재 응원팀:{' '}
-                {user?.teams
-                  ? `${user.teams.name} ${user.teams.emoji}`
-                  : '없음'}
+                현재 응원팀: {user?.teams ? `${user.teams.name} ` : '없음'}
               </Text>
             </View>
             <Ionicons name='chevron-forward' size={24} color='gray' />
